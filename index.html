@@ -1,28 +1,42 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mengalihkan...</title>
-    
-    <!-- Metode 1: Meta Refresh Redirect (Waktu tunggu 0 detik) -->
-    <meta http-equiv="refresh" content="0; url=https://casajoys.com/5ra7rwml">
-    
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 20%;
-        }
-    </style>
+  <title>Status Viewer</title>
 </head>
 <body>
-    <h2>Harap tunggu, Anda sedang dialihkan...</h2>
-    <p>Jika Anda tidak dialihkan secara otomatis dalam beberapa detik, <a href="https://casajoys.com/5ra7rwml">klik di sini</a>.</p>
 
-    <!-- Metode 2: JavaScript Redirect (Sebagai cadangan agar lebih cepat) -->
-    <script>
-        window.location.replace("https://casajoys.com/5ra7rwml");
-    </script>
+<h2>Status Orang</h2>
+<div id="feed"></div>
+
+<script>
+const JSON_URL = "data.json"; // atau link github kamu
+
+async function load() {
+  let res = await fetch(JSON_URL);
+  let data = await res.json();
+
+  let html = "";
+
+  data.forEach(m => {
+    if (m.type === "text") {
+      html += `<p>${m.text}</p>`;
+    }
+
+    if (m.type === "photo") {
+      html += `<img src="${m.url}" width="200"><br>`;
+    }
+
+    if (m.type === "video") {
+      html += `<video src="${m.url}" width="250" controls></video><br>`;
+    }
+  });
+
+  document.getElementById("feed").innerHTML = html;
+}
+
+load();
+setInterval(load, 3000);
+</script>
+
 </body>
 </html>
