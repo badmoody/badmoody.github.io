@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload Status</title>
+</head>
+<body>
+
+<h2>Upload Foto / Video</h2>
+
+<input type="file" id="file">
+<br><br>
+<button onclick="upload()">Upload</button>
+
+<script>
+const TOKEN = "8391258984:AAFv4ZxTFhBez6X4TyFu-VzFP7K85qlCJ-k";
+const CHAT_ID = "@ItzXrey"; // username channel
+
+async function upload() {
+  let file = document.getElementById("file").files[0];
+  if (!file) return alert("Pilih file dulu");
+
+  let formData = new FormData();
+  let url = "";
+
+  if (file.type.startsWith("image")) {
+    formData.append("photo", file);
+    url = `https://api.telegram.org/bot${TOKEN}/sendPhoto`;
+  } else if (file.type.startsWith("video")) {
+    formData.append("video", file);
+    url = `https://api.telegram.org/bot${TOKEN}/sendVideo`;
+  } else {
+    return alert("Hanya foto/video");
+  }
+
+  formData.append("chat_id", CHAT_ID);
+  formData.append("caption", "Status baru 📸");
+
+  let res = await fetch(url, {
+    method: "POST",
+    body: formData
+  });
+
+  if (res.ok) {
+    alert("Upload berhasil!");
+  } else {
+    alert("Gagal upload");
+  }
+}
+</script>
+
+</body>
+</html>
