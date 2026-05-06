@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anon Chat</title>
+<title>Anon Chat Pro</title>
 
 <style>
 body{
   margin:0;
   font-family: 'Segoe UI', sans-serif;
-  background: #0f172a;
+  background:#0f172a;
   color:white;
 }
 
@@ -25,14 +25,12 @@ body{
   text-align:center;
   font-weight:bold;
   font-size:18px;
-  letter-spacing:1px;
 }
 
 .status{
   text-align:center;
   font-size:12px;
   color:#94a3b8;
-  padding:5px;
 }
 
 .chat{
@@ -42,12 +40,10 @@ body{
 }
 
 .msg{
-  margin:8px 0;
-  padding:12px;
-  border-radius:12px;
+  margin:6px 0;
+  padding:10px;
+  border-radius:10px;
   max-width:75%;
-  word-wrap:break-word;
-  animation:fadeIn 0.2s ease;
 }
 
 .me{
@@ -70,27 +66,15 @@ input{
   padding:12px;
   border:none;
   border-radius:10px;
-  outline:none;
-  font-size:14px;
 }
 
 button{
   margin-left:10px;
-  padding:12px 16px;
-  border:none;
+  padding:12px;
   background:#22c55e;
+  border:none;
   color:white;
   border-radius:10px;
-  cursor:pointer;
-}
-
-button:hover{
-  background:#16a34a;
-}
-
-@keyframes fadeIn{
-  from{opacity:0; transform:translateY(5px);}
-  to{opacity:1; transform:translateY(0);}
 }
 </style>
 </head>
@@ -98,7 +82,7 @@ button:hover{
 <body>
 
 <div class="container">
-  <div class="header">Anon Chat</div>
+  <div class="header">Anon Chat Pro</div>
   <div class="status" id="status">Menghubungkan...</div>
 
   <div class="chat" id="chat"></div>
@@ -114,12 +98,12 @@ button:hover{
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <script>
-// ðŸ”¥ MASUKKAN CONFIG FIREBASE KAMU DI SINI
+// ✅ CONFIG KAMU (SUDAH DIPASANG)
 const firebaseConfig = {
   apiKey: "AIzaSyAXgG6MjRVIpZcXhjRacZp-eMs8Cc3nKds",
   authDomain: "anon-chat-23db1.firebaseapp.com",
   databaseURL: "https://anon-chat-23db1-default-rtdb.firebaseio.com",
-  projectId: "anon-chat-23db1",
+  projectId: "anon-chat-23db1"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -133,47 +117,67 @@ function randomName(){
 let username = randomName();
 let roomId = "";
 
-// JOIN ROOM
+// 🔥 JOIN FIX (ANTI BUG)
 async function joinRoom(){
-  let snapshot = await db.ref("rooms").once("value");
-  let rooms = snapshot.val();
+  let waitingRef = db.ref("waiting");
 
-  if(rooms){
-    for(let id in rooms){
-      let count = rooms[id].users ? Object.keys(rooms[id].users).length : 0;
+  let snap = await waitingRef.get();
 
-      if(count === 1){
-        roomId = id;
-        db.ref("rooms/"+id+"/users").push(username);
-        startChat();
-        return;
-      }
-    }
+  if(snap.exists()){
+    // ADA YANG NUNGGU → JOIN
+    let data = snap.val();
+    roomId = data.roomId;
+
+    await db.ref("rooms/"+roomId+"/users").push(username);
+    await waitingRef.remove();
+
+    startChat(true);
+  }else{
+    // GA ADA → JADI YANG NUNGGU
+    roomId = "room_" + Date.now();
+
+    await db.ref("rooms/"+roomId).set({
+      users: {},
+      messages: {}
+    });
+
+    await db.ref("rooms/"+roomId+"/users").push(username);
+
+    await waitingRef.set({
+      roomId: roomId
+    });
+
+    startChat(false);
   }
-
-  // buat room baru
-  roomId = "room_" + Date.now();
-
-  db.ref("rooms/"+roomId).set({
-    users: {[Date.now()]: username},
-    messages: {}
-  });
-
-  startChat();
 }
 
 // START CHAT
-function startChat(){
-  document.getElementById("status").innerText =
-    "Room: " + roomId + " | Nama: " + username;
+function startChat(connected){
+  let status = document.getElementById("status");
 
+  if(connected){
+    status.innerText = "Terhubung dengan orang lain";
+  }else{
+    status.innerText = "Menunggu pasangan...";
+  }
+
+  // LISTEN USER
+  db.ref("rooms/"+roomId+"/users").on("value", snap=>{
+    let count = snap.numChildren();
+
+    if(count === 2){
+      status.innerText = "Terhubung dengan orang lain";
+    }
+  });
+
+  // LISTEN MESSAGE
   db.ref("rooms/"+roomId+"/messages").on("child_added", snap=>{
     let data = snap.val();
     addMessage(data);
   });
 }
 
-// ADD MESSAGE UI
+// UI MESSAGE
 function addMessage(data){
   let chat = document.getElementById("chat");
 
