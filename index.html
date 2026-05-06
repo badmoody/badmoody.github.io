@@ -1,61 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
 <title>Anon Server Chat</title>
 
 <style>
-body{margin:0;font-family:sans-serif;background:#0f172a;color:white}
-.header{display:flex;align-items:center;background:#1e293b;padding:10px}
-.title{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.btn{background:#22c55e;border:none;color:white;padding:8px 12px;border-radius:8px}
-.btn.gray{background:#475569}
+  :root {
+    --bg-main: #0f172a;
+    --bg-sec: #1e293b;
+    --bg-card: #334155;
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --success: #10b981;
+    --danger: #ef4444;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+  }
 
-.server-list{padding:10px}
-.server{
-  background:#1e293b;
-  padding:10px;
-  border-radius:10px;
-  margin-bottom:10px;
-  position:relative;
-}
-.tag{font-size:10px;color:#22c55e}
-.time{font-size:10px;color:#94a3b8}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg-main); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-.chat{display:none;height:calc(100vh - 100px);flex-direction:column}
-.messages{flex:1;overflow:auto;padding:10px}
-.msg{margin:5px 0;padding:8px;border-radius:8px;max-width:70%}
-.me{background:#2563eb;margin-left:auto}
-.other{background:#334155}
+  /* Header */
+  .header { display: flex; align-items: center; justify-content: space-between; background: var(--bg-sec); padding: 16px 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); z-index: 10; }
+  .title { font-size: 1.1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; text-align: center; }
+  
+  /* Buttons */
+  .btn { display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--primary); border: none; color: white; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; }
+  .btn:hover { background: var(--primary-hover); transform: scale(0.98); }
+  .btn:disabled, .btn.gray { background: var(--bg-card); color: var(--text-muted); cursor: not-allowed; transform: none; }
+  .btn-icon { padding: 8px; border-radius: 50%; background: transparent; border: none; color: var(--text-main); cursor: pointer; transition: background 0.2s; }
+  .btn-icon:hover { background: var(--bg-card); }
+  .btn-danger { color: var(--danger); background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 6px; transition: 0.2s; }
+  .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
 
-.input{display:flex;padding:10px;background:#1e293b}
-input{flex:1;padding:10px;border-radius:8px;border:none}
-.typing{font-size:12px;color:#94a3b8;margin-left:10px}
+  /* Server List */
+  #home { height: 100%; display: flex; flex-direction: column; }
+  .server-list { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .server { background: var(--bg-sec); padding: 16px; border-radius: 12px; border: 1px solid var(--bg-card); position: relative; cursor: pointer; transition: transform 0.2s, border-color 0.2s; display: flex; justify-content: space-between; align-items: center; }
+  .server:hover { transform: translateY(-2px); border-color: var(--primary); }
+  .server-info { display: flex; flex-direction: column; gap: 4px; }
+  .server-name { font-weight: 600; font-size: 1rem; color: #fff; }
+  .server-meta { display: flex; align-items: center; gap: 10px; font-size: 0.75rem; color: var(--text-muted); }
+  .tag { background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+  .user-count { display: flex; align-items: center; gap: 4px; background: var(--bg-main); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+
+  /* Chat Room */
+  .chat { display: none; height: 100vh; flex-direction: column; background: var(--bg-main); }
+  .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+  .msg-wrapper { display: flex; flex-direction: column; max-width: 75%; }
+  .msg-wrapper.me { align-self: flex-end; align-items: flex-end; }
+  .msg-wrapper.other { align-self: flex-start; align-items: flex-start; }
+  .msg-sender { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px; margin-left: 4px; margin-right: 4px; }
+  .msg { padding: 10px 14px; border-radius: 16px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; }
+  .me .msg { background: var(--primary); color: white; border-bottom-right-radius: 4px; }
+  .other .msg { background: var(--bg-sec); color: var(--text-main); border-bottom-left-radius: 4px; border: 1px solid var(--bg-card); }
+
+  /* Input Area */
+  .input-area { background: var(--bg-sec); padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--bg-card); padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  .typing { font-size: 0.75rem; color: var(--primary); height: 14px; font-style: italic; }
+  .input-box { display: flex; gap: 10px; align-items: center; }
+  input { flex: 1; padding: 12px 16px; border-radius: 24px; border: 1px solid var(--bg-card); background: var(--bg-main); color: white; font-size: 1rem; transition: 0.2s; outline: none; }
+  input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+  
+  .send-btn { background: var(--primary); border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+  .send-btn:hover { background: var(--primary-hover); transform: scale(1.05); }
+
+  /* SVG Icons */
+  svg { width: 20px; height: 20px; fill: currentColor; }
 </style>
 </head>
-
 <body>
 
+<!-- HOME PAGE -->
 <div id="home">
   <div class="header">
-    <button id="createBtn" class="btn">+</button>
-    <div class="title">Server List</div>
+    <div style="width:36px;"></div> <!-- Spacer -->
+    <div class="title">Chat Servers</div>
+    <button id="createBtn" class="btn" onclick="createServer()" title="Buat Server">
+      <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    </button>
   </div>
-
-  <div class="server-list" id="servers"></div>
+  <div class="server-list" id="servers">
+    <!-- Server list di-generate disini -->
+  </div>
 </div>
 
+<!-- CHAT PAGE -->
 <div id="chatPage" class="chat">
   <div class="header">
-    <button onclick="leave()">X</button>
-    <div class="title" id="roomName"></div>
+    <button class="btn-icon" onclick="leave()">
+      <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <div class="title" id="roomName">Loading...</div>
+    <div style="width:36px;"></div> <!-- Spacer -->
   </div>
 
   <div class="messages" id="messages"></div>
-  <div class="typing" id="typing"></div>
-
-  <div class="input">
-    <input id="msg" placeholder="Ketik..." oninput="typing()" onkeypress="if(event.key==='Enter') send()">
+  
+  <div class="input-area">
+    <div class="typing" id="typing"></div>
+    <div class="input-box">
+      <input id="msg" placeholder="Ketik pesan..." oninput="triggerTyping()" onkeypress="if(event.key==='Enter') send()">
+      <button class="send-btn" onclick="send()">
+        <svg viewBox="0 0 24 24" style="margin-left: 2px;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -63,145 +113,234 @@ input{flex:1;padding:10px;border-radius:8px;border:none}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <script>
+// --- CONFIG FIREBASE & BOT ---
 const firebaseConfig = {
   apiKey: "AIzaSyAXgG6MjRVIpZcXhjRacZp-eMs8Cc3nKds",
   authDomain: "anon-chat-23db1.firebaseapp.com",
   databaseURL: "https://anon-chat-23db1-default-rtdb.firebaseio.com",
   projectId: "anon-chat-23db1"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const BOT_TOKEN = "8391258984:AAFv4ZxTFhBez6X4TyFu-VzFP7K85qlCJ-k";
 const CHAT_ID = "8391258984";
 
-let username = "User_" + Math.floor(Math.random()*9999);
+// --- SISTEM SESI USER (Penting untuk mempertahankan kepemilikan server saat reload) ---
+let username = localStorage.getItem("anonUser");
+if (!username) {
+  username = "User_" + Math.floor(Math.random()*9999);
+  localStorage.setItem("anonUser", username);
+}
+
 let currentRoom = null;
-let myServerCreated = false;
+let typingTimeout = null;
 
-// INIT PUBLIC SERVER
-db.ref("servers/public").set({
-  name:"Server Public",
-  max:100,
-  created:Date.now()
-});
-
-// LOAD SERVERS
-db.ref("servers").on("value", snap=>{
-  let data = snap.val();
-  let container = document.getElementById("servers");
-  container.innerHTML="";
-
-  for(let id in data){
-    let s = data[id];
-
-    let div = document.createElement("div");
-    div.className="server";
-    div.innerHTML = `
-      <b>${s.name}</b><br>
-      <span class="time">${new Date(s.created).toLocaleTimeString()}</span>
-      ${s.owner===username ? '<div class="tag">Your Server</div>' : ''}
-    `;
-
-    div.onclick = ()=>join(id,s);
-
-    // HOLD DELETE
-    let hold;
-    div.onmousedown=()=>{
-      hold=setTimeout(()=>{
-        if(s.owner===username){
-          db.ref("servers/"+id).remove();
-        }
-      },800);
-    };
-    div.onmouseup=()=>clearTimeout(hold);
-
-    container.appendChild(div);
+// --- INIT PUBLIC SERVER (Cegah Overwrite) ---
+db.ref("servers/public").once("value", snap => {
+  if (!snap.exists()) {
+    db.ref("servers/public").set({
+      name: "🌍 Server Public",
+      max: 100,
+      created: Date.now(),
+      owner: "System"
+    });
   }
 });
 
-// CREATE SERVER
-document.getElementById("createBtn").onclick=()=>{
-  if(myServerCreated) return;
+// --- LOAD SERVERS & CEK LIMIT ---
+db.ref("servers").on("value", snap => {
+  let data = snap.val();
+  let container = document.getElementById("servers");
+  container.innerHTML = "";
+  let hasOwnedServer = false;
 
-  let id="srv_"+Date.now();
-  let name="Server_"+Math.floor(Math.random()*999);
+  for(let id in data){
+    let s = data[id];
+    let isOwner = s.owner === username;
+    if(isOwner) hasOwnedServer = true;
 
-  db.ref("servers/"+id).set({
-    name:name,
-    max:20,
-    created:Date.now(),
-    owner:username
+    // Hitung jumlah user online
+    let userCount = s.users ? Object.keys(s.users).length : 0;
+
+    let div = document.createElement("div");
+    div.className = "server";
+    div.onclick = () => join(id, s);
+    
+    // Format Waktu
+    let timeString = new Date(s.created).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+    div.innerHTML = `
+      <div class="server-info">
+        <div class="server-name">${s.name} ${isOwner ? '<span class="tag">Server Anda</span>' : ''}</div>
+        <div class="server-meta">
+          <span>Dibuat: ${timeString}</span>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap: 10px;">
+        <div class="user-count">
+          <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          ${userCount}/${s.max}
+        </div>
+        ${isOwner ? `
+          <button class="btn-danger" onclick="deleteServer('${id}', event)" title="Hapus Server">
+            <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </button>
+        ` : ''}
+      </div>
+    `;
+    container.appendChild(div);
+  }
+
+  // Handle Button Limit
+  let btn = document.getElementById("createBtn");
+  if (hasOwnedServer) {
+    btn.disabled = true;
+    btn.title = "Anda hanya bisa memiliki 1 server!";
+  } else {
+    btn.disabled = false;
+    btn.title = "Buat Server";
+  }
+});
+
+// --- CREATE SERVER ---
+function createServer(){
+  let btn = document.getElementById("createBtn");
+  if(btn.disabled) return;
+
+  let id = "srv_" + Date.now();
+  let name = "Server_" + Math.floor(Math.random()*999);
+
+  db.ref("servers/" + id).set({
+    name: name,
+    max: 20,
+    created: Date.now(),
+    owner: username
   });
+}
 
-  myServerCreated=true;
-  document.getElementById("createBtn").classList.add("gray");
-};
+// --- DELETE SERVER ---
+function deleteServer(id, event) {
+  event.stopPropagation(); // Cegah masuk ke chat room saat klik hapus
+  if(confirm("Apakah Anda yakin ingin menghapus server ini?")) {
+    db.ref("servers/" + id).remove();
+  }
+}
 
-// JOIN
-function join(id,s){
-  currentRoom=id;
+// --- JOIN ---
+function join(id, s) {
+  currentRoom = id;
 
-  document.getElementById("home").style.display="none";
-  document.getElementById("chatPage").style.display="flex";
-  document.getElementById("roomName").innerText=s.name;
+  // Switch UI
+  document.getElementById("home").style.display = "none";
+  document.getElementById("chatPage").style.display = "flex";
+  document.getElementById("roomName").innerText = s.name;
+  document.getElementById("messages").innerHTML = "";
 
-  db.ref("servers/"+id+"/users/"+username).set(true);
+  // Set User Online (Sistem Kehadiran / Presence)
+  let userRef = db.ref("servers/" + id + "/users/" + username);
+  userRef.set(true);
+  userRef.onDisconnect().remove(); // Hapus otomatis jika tab diclose
 
-  db.ref("servers/"+id+"/messages").on("child_added",snap=>{
-    let m=snap.val();
+  // Load Messages
+  db.ref("servers/" + id + "/messages").on("child_added", snap => {
+    let m = snap.val();
     addMsg(m);
   });
 
-  db.ref("servers/"+id+"/typing").on("value",snap=>{
-    let t=snap.val();
-    document.getElementById("typing").innerText = t && t!==username ? t+" sedang mengetik..." : "";
+  // Load Typing
+  db.ref("servers/" + id + "/typing").on("value", snap => {
+    let t = snap.val();
+    let typingDiv = document.getElementById("typing");
+    typingDiv.innerText = (t && t !== username) ? `${t} sedang mengetik...` : "";
   });
 }
 
-// LEAVE
-function leave(){
-  db.ref("servers/"+currentRoom+"/users/"+username).remove();
-  location.reload();
+// --- LEAVE ---
+function leave() {
+  if(!currentRoom) return;
+
+  // Hapus dari daftar user dan batalkan onDisconnect
+  let userRef = db.ref("servers/" + currentRoom + "/users/" + username);
+  userRef.remove();
+  userRef.onDisconnect().cancel(); 
+
+  // Hapus Listener agar memori tidak bocor (SPA Sejati)
+  db.ref("servers/" + currentRoom + "/messages").off();
+  db.ref("servers/" + currentRoom + "/typing").off();
+
+  currentRoom = null;
+
+  // Kembali ke Home
+  document.getElementById("chatPage").style.display = "none";
+  document.getElementById("home").style.display = "flex";
 }
 
-// SEND
-function send(){
-  let text=document.getElementById("msg").value;
+// --- SEND ---
+function send() {
+  let input = document.getElementById("msg");
+  let text = input.value.trim();
   if(!text) return;
 
-  let msg={name:username,text:text};
+  let msg = { name: username, text: text };
 
-  db.ref("servers/"+currentRoom+"/messages").push(msg);
+  // Kirim ke Firebase
+  db.ref("servers/" + currentRoom + "/messages").push(msg);
 
-  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      chat_id:CHAT_ID,
-      text:`[${currentRoom}] ${username}: ${text}`
+  // Kirim ke Telegram Bot
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      chat_id: CHAT_ID,
+      text: `[${currentRoom}]\n👤 ${username}: ${text}`
     })
-  });
+  }).catch(e => console.error("Gagal kirim ke tele", e));
 
-  document.getElementById("msg").value="";
+  input.value = "";
+  input.focus();
+  
+  // Hapus status typing segera setelah mengirim
+  db.ref("servers/" + currentRoom + "/typing").set("");
 }
 
-// UI MSG
-function addMsg(m){
-  let div=document.createElement("div");
-  div.className="msg "+(m.name===username?"me":"other");
-  div.innerText=m.name+": "+m.text;
-  document.getElementById("messages").appendChild(div);
+// --- UI MSG & SCROLL ---
+function addMsg(m) {
+  let isMe = m.name === username;
+  let container = document.getElementById("messages");
+
+  let wrapper = document.createElement("div");
+  wrapper.className = "msg-wrapper " + (isMe ? "me" : "other");
+  
+  wrapper.innerHTML = `
+    ${!isMe ? `<div class="msg-sender">${m.name}</div>` : ''}
+    <div class="msg">${escapeHtml(m.text)}</div>
+  `;
+
+  container.appendChild(wrapper);
+  
+  // Auto Scroll ke bawah
+  container.scrollTop = container.scrollHeight;
 }
 
-// TYPING
-function typing(){
-  db.ref("servers/"+currentRoom+"/typing").set(username);
+// --- TYPING INDICATOR ---
+function triggerTyping() {
+  db.ref("servers/" + currentRoom + "/typing").set(username);
 
-  setTimeout(()=>{
-    db.ref("servers/"+currentRoom+"/typing").set("");
-  },1500);
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    if(currentRoom) db.ref("servers/" + currentRoom + "/typing").set("");
+  }, 1500);
+}
+
+// --- HELPER (Keamanan Teks) ---
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
 }
 </script>
 
