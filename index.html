@@ -1,104 +1,68 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anon Chat Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anon Server Chat</title>
 
 <style>
-body{
-  margin:0;
-  font-family: 'Segoe UI', sans-serif;
-  background:#0f172a;
-  color:white;
-}
+body{margin:0;font-family:sans-serif;background:#0f172a;color:white}
+.header{display:flex;align-items:center;background:#1e293b;padding:10px}
+.title{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{background:#22c55e;border:none;color:white;padding:8px 12px;border-radius:8px}
+.btn.gray{background:#475569}
 
-.container{
-  display:flex;
-  flex-direction:column;
-  height:100vh;
-}
-
-.header{
+.server-list{padding:10px}
+.server{
   background:#1e293b;
-  padding:15px;
-  text-align:center;
-  font-weight:bold;
-  font-size:18px;
-}
-
-.status{
-  text-align:center;
-  font-size:12px;
-  color:#94a3b8;
-}
-
-.chat{
-  flex:1;
-  overflow-y:auto;
-  padding:15px;
-}
-
-.msg{
-  margin:6px 0;
   padding:10px;
   border-radius:10px;
-  max-width:75%;
+  margin-bottom:10px;
+  position:relative;
 }
+.tag{font-size:10px;color:#22c55e}
+.time{font-size:10px;color:#94a3b8}
 
-.me{
-  background:#2563eb;
-  margin-left:auto;
-}
+.chat{display:none;height:calc(100vh - 100px);flex-direction:column}
+.messages{flex:1;overflow:auto;padding:10px}
+.msg{margin:5px 0;padding:8px;border-radius:8px;max-width:70%}
+.me{background:#2563eb;margin-left:auto}
+.other{background:#334155}
 
-.other{
-  background:#334155;
-}
-
-.input-area{
-  display:flex;
-  padding:10px;
-  background:#1e293b;
-}
-
-input{
-  flex:1;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-}
-
-button{
-  margin-left:10px;
-  padding:12px;
-  background:#22c55e;
-  border:none;
-  color:white;
-  border-radius:10px;
-}
+.input{display:flex;padding:10px;background:#1e293b}
+input{flex:1;padding:10px;border-radius:8px;border:none}
+.typing{font-size:12px;color:#94a3b8;margin-left:10px}
 </style>
 </head>
 
 <body>
 
-<div class="container">
-  <div class="header">Anon Chat Pro</div>
-  <div class="status" id="status">Menghubungkan...</div>
+<div id="home">
+  <div class="header">
+    <button id="createBtn" class="btn">+</button>
+    <div class="title">Server List</div>
+  </div>
 
-  <div class="chat" id="chat"></div>
+  <div class="server-list" id="servers"></div>
+</div>
 
-  <div class="input-area">
-    <input id="msg" placeholder="Ketik pesan..." onkeypress="if(event.key==='Enter') send()">
-    <button onclick="send()">Kirim</button>
+<div id="chatPage" class="chat">
+  <div class="header">
+    <button onclick="leave()">X</button>
+    <div class="title" id="roomName"></div>
+  </div>
+
+  <div class="messages" id="messages"></div>
+  <div class="typing" id="typing"></div>
+
+  <div class="input">
+    <input id="msg" placeholder="Ketik..." oninput="typing()" onkeypress="if(event.key==='Enter') send()">
   </div>
 </div>
 
-<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <script>
-// ✅ CONFIG KAMU (SUDAH DIPASANG)
 const firebaseConfig = {
   apiKey: "AIzaSyAXgG6MjRVIpZcXhjRacZp-eMs8Cc3nKds",
   authDomain: "anon-chat-23db1.firebaseapp.com",
@@ -109,103 +73,136 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// RANDOM NAME
-function randomName(){
-  return "Anon_" + Math.floor(Math.random()*9999);
-}
+const BOT_TOKEN = "8391258984:AAFv4ZxTFhBez6X4TyFu-VzFP7K85qlCJ-k";
+const CHAT_ID = "8391258984";
 
-let username = randomName();
-let roomId = "";
+let username = "User_" + Math.floor(Math.random()*9999);
+let currentRoom = null;
+let myServerCreated = false;
 
-// 🔥 JOIN FIX (ANTI BUG)
-async function joinRoom(){
-  let waitingRef = db.ref("waiting");
+// INIT PUBLIC SERVER
+db.ref("servers/public").set({
+  name:"Server Public",
+  max:100,
+  created:Date.now()
+});
 
-  let snap = await waitingRef.get();
+// LOAD SERVERS
+db.ref("servers").on("value", snap=>{
+  let data = snap.val();
+  let container = document.getElementById("servers");
+  container.innerHTML="";
 
-  if(snap.exists()){
-    // ADA YANG NUNGGU → JOIN
-    let data = snap.val();
-    roomId = data.roomId;
+  for(let id in data){
+    let s = data[id];
 
-    await db.ref("rooms/"+roomId+"/users").push(username);
-    await waitingRef.remove();
+    let div = document.createElement("div");
+    div.className="server";
+    div.innerHTML = `
+      <b>${s.name}</b><br>
+      <span class="time">${new Date(s.created).toLocaleTimeString()}</span>
+      ${s.owner===username ? '<div class="tag">Your Server</div>' : ''}
+    `;
 
-    startChat(true);
-  }else{
-    // GA ADA → JADI YANG NUNGGU
-    roomId = "room_" + Date.now();
+    div.onclick = ()=>join(id,s);
 
-    await db.ref("rooms/"+roomId).set({
-      users: {},
-      messages: {}
-    });
+    // HOLD DELETE
+    let hold;
+    div.onmousedown=()=>{
+      hold=setTimeout(()=>{
+        if(s.owner===username){
+          db.ref("servers/"+id).remove();
+        }
+      },800);
+    };
+    div.onmouseup=()=>clearTimeout(hold);
 
-    await db.ref("rooms/"+roomId+"/users").push(username);
-
-    await waitingRef.set({
-      roomId: roomId
-    });
-
-    startChat(false);
+    container.appendChild(div);
   }
-}
+});
 
-// START CHAT
-function startChat(connected){
-  let status = document.getElementById("status");
+// CREATE SERVER
+document.getElementById("createBtn").onclick=()=>{
+  if(myServerCreated) return;
 
-  if(connected){
-    status.innerText = "Terhubung dengan orang lain";
-  }else{
-    status.innerText = "Menunggu pasangan...";
-  }
+  let id="srv_"+Date.now();
+  let name="Server_"+Math.floor(Math.random()*999);
 
-  // LISTEN USER
-  db.ref("rooms/"+roomId+"/users").on("value", snap=>{
-    let count = snap.numChildren();
-
-    if(count === 2){
-      status.innerText = "Terhubung dengan orang lain";
-    }
+  db.ref("servers/"+id).set({
+    name:name,
+    max:20,
+    created:Date.now(),
+    owner:username
   });
 
-  // LISTEN MESSAGE
-  db.ref("rooms/"+roomId+"/messages").on("child_added", snap=>{
-    let data = snap.val();
-    addMessage(data);
+  myServerCreated=true;
+  document.getElementById("createBtn").classList.add("gray");
+};
+
+// JOIN
+function join(id,s){
+  currentRoom=id;
+
+  document.getElementById("home").style.display="none";
+  document.getElementById("chatPage").style.display="flex";
+  document.getElementById("roomName").innerText=s.name;
+
+  db.ref("servers/"+id+"/users/"+username).set(true);
+
+  db.ref("servers/"+id+"/messages").on("child_added",snap=>{
+    let m=snap.val();
+    addMsg(m);
+  });
+
+  db.ref("servers/"+id+"/typing").on("value",snap=>{
+    let t=snap.val();
+    document.getElementById("typing").innerText = t && t!==username ? t+" sedang mengetik..." : "";
   });
 }
 
-// UI MESSAGE
-function addMessage(data){
-  let chat = document.getElementById("chat");
-
-  let div = document.createElement("div");
-  div.className = "msg " + (data.name === username ? "me":"other");
-  div.innerText = data.name + ": " + data.text;
-
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+// LEAVE
+function leave(){
+  db.ref("servers/"+currentRoom+"/users/"+username).remove();
+  location.reload();
 }
 
 // SEND
 function send(){
-  let input = document.getElementById("msg");
-  let text = input.value.trim();
-
+  let text=document.getElementById("msg").value;
   if(!text) return;
 
-  db.ref("rooms/"+roomId+"/messages").push({
-    name: username,
-    text: text
+  let msg={name:username,text:text};
+
+  db.ref("servers/"+currentRoom+"/messages").push(msg);
+
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      chat_id:CHAT_ID,
+      text:`[${currentRoom}] ${username}: ${text}`
+    })
   });
 
-  input.value = "";
+  document.getElementById("msg").value="";
 }
 
-// START
-joinRoom();
+// UI MSG
+function addMsg(m){
+  let div=document.createElement("div");
+  div.className="msg "+(m.name===username?"me":"other");
+  div.innerText=m.name+": "+m.text;
+  document.getElementById("messages").appendChild(div);
+}
+
+// TYPING
+function typing(){
+  db.ref("servers/"+currentRoom+"/typing").set(username);
+
+  setTimeout(()=>{
+    db.ref("servers/"+currentRoom+"/typing").set("");
+  },1500);
+}
 </script>
 
 </body>
