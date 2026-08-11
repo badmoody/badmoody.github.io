@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kustomisasi Kertas - Dark Mode</title>
+    <title>Kustomisasi Kertas</title>
     <style>
         * {
             box-sizing: border-box;
@@ -28,6 +28,7 @@
             min-height: 100vh;
             padding: 20px;
             overflow-y: auto; 
+            font-weight: 700;
         }
 
         .container {
@@ -44,9 +45,9 @@
         }
 
         h1 {
-            font-size: 22px;
-            margin-bottom: 20px;
-            font-weight: 600;
+            font-size: 24px;
+            margin-bottom: 22px;
+            font-weight: 700;
             text-align: center;
             letter-spacing: 0.5px;
         }
@@ -120,8 +121,8 @@
             justify-content: center;
             cursor: pointer;
             margin-bottom: 8px; 
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 15px;
+            font-weight: 700;
             flex-shrink: 0;
             color: #ffffff;
         }
@@ -175,19 +176,26 @@
             color: #ffffff;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 17px;
+            font-weight: 700;
             cursor: pointer;
             letter-spacing: 0.5px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+
+        .download-btn.clicked {
+            transform: scale(0.96);
+            background-color: #4f46e5;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
         }
 
         .warning-text {
             display: none;
             color: #ff4d4d;
-            font-size: 13px;
+            font-size: 14px;
             margin-top: 15px;
             text-align: center;
-            font-weight: 500;
+            font-weight: 700;
             width: 100%;
         }
 
@@ -197,16 +205,17 @@
             margin-top: 25px;
             padding-top: 15px;
             border-top: 1px solid #333333;
-            font-size: 13px;
+            font-size: 14px;
             color: #888888;
             letter-spacing: 0.5px;
             line-height: 1.8;
+            font-weight: 700;
         }
 
         .profile-link {
             color: #3b82f6;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
         }
     </style>
 </head>
@@ -229,7 +238,7 @@
         </div>
 
         <div class="controls-wrapper">
-            <div class="custom-color-btn" title="Pilih Warna Bebas">
+            <div class="custom-color-btn">
                 Atur Warna
                 <input type="color" id="colorPicker" value="#6366f1">
             </div>
@@ -237,7 +246,7 @@
             <div class="color-palette" id="colorPalette"></div>
         </div>
 
-        <button class="download-btn" onclick="downloadImage()">Download Gambar</button>
+        <button class="download-btn" id="downloadBtn" onclick="triggerDownload()">Download Gambar</button>
         <div class="warning-text" id="warningText">Jika ada kesalahan dalam meng-download Paper, Klik ulang Download</div>
         
         <div class="footer-text">
@@ -249,12 +258,15 @@
     <script>
         let currentImageSrc = 'paper1.png'; 
         let currentColor = '#6366f1';
+        let isRendering = false;
         
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         
-        const mainImg = new Image();
-        mainImg.crossOrigin = "Anonymous";
+        const preloadedImages = {
+            'paper1.png': new Image(),
+            'paper2.png': new Image()
+        };
 
         const colors = [
             '#ffffff', '#e2e8f0', '#94a3b8', '#475569', '#0f172a', '#000000',
@@ -285,10 +297,25 @@
             swatch.onclick = () => {
                 currentColor = color;
                 document.getElementById('colorPicker').value = color;
-                renderCanvas();
+                requestRender();
             };
             paletteContainer.appendChild(swatch);
         });
+
+        function initPreload() {
+            let loadedCount = 0;
+            const sources = ['paper1.png', 'paper2.png'];
+            
+            sources.forEach(src => {
+                preloadedImages[src].onload = () => {
+                    loadedCount++;
+                    if (loadedCount === sources.length || src === currentImageSrc) {
+                        applyActiveImage();
+                    }
+                };
+                preloadedImages[src].src = src;
+            });
+        }
 
         function changeTemplate(src, element) {
             const items = document.querySelectorAll('.template-item');
@@ -296,24 +323,34 @@
             element.classList.add('active');
             
             currentImageSrc = src;
-            loadImage();
+            applyActiveImage();
         }
 
-        mainImg.onload = () => {
-            canvas.width = mainImg.naturalWidth;
-            canvas.height = mainImg.naturalHeight;
-            renderCanvas();
-        };
+        function applyActiveImage() {
+            const activeImg = preloadedImages[currentImageSrc];
+            if (activeImg.naturalWidth) {
+                canvas.width = activeImg.naturalWidth;
+                canvas.height = activeImg.naturalHeight;
+                requestRender();
+            }
+        }
 
-        function loadImage() {
-            mainImg.src = currentImageSrc;
+        function requestRender() {
+            if (!isRendering) {
+                isRendering = true;
+                requestAnimationFrame(() => {
+                    renderCanvas();
+                    isRendering = false;
+                });
+            }
         }
 
         function renderCanvas() {
-            if (!mainImg.naturalWidth) return;
+            const activeImg = preloadedImages[currentImageSrc];
+            if (!activeImg.naturalWidth) return;
             
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(mainImg, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(activeImg, 0, 0, canvas.width, canvas.height);
 
             ctx.globalCompositeOperation = 'multiply';
             ctx.fillStyle = currentColor;
@@ -323,24 +360,30 @@
 
         document.getElementById('colorPicker').addEventListener('input', function(e) {
             currentColor = e.target.value;
-            renderCanvas();
+            requestRender();
         });
 
-        function downloadImage() {
+        function triggerDownload() {
+            const btn = document.getElementById('downloadBtn');
+            btn.classList.add('clicked');
+            
+            setTimeout(() => {
+                btn.classList.remove('clicked');
+            }, 200);
+
             document.getElementById('warningText').style.display = 'block';
             
             try {
                 const link = document.createElement('a');
-                link.download = `Paper-Zat-${currentColor}.png`;
+                link.download = `Paper-${currentColor}.png`;
                 link.href = canvas.toDataURL('image/png', 1.0);
                 link.click();
             } catch (error) {
-                document.getElementById('warningText').innerText = "Download terblokir browser. Mohon gunakan Live Server.";
             }
         }
 
         window.onload = () => {
-            loadImage();
+            initPreload();
         };
     </script>
 </body>
