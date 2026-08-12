@@ -1,30 +1,27 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Mencegah zoom layar agar UI tetap stabil -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Profile - Zat</title>
     
-    <!-- Import Font Gaya Coretan (Graffiti & Handwriting) dari Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Permanent+Marker&display=swap" rel="stylesheet">
 
     <style>
-        /* Mengatur Font dan Reset Dasar, serta Anti-Copy Text */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            /* Mencegah Teks Disalin */
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
-            user-select: none; 
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
         }
 
-        /* Mengatur Background dan Anti-Refresh Mobile */
         body {
-            background-image: url('GB.png');
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('GB.png');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -32,89 +29,170 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            /* Posisi dinaikkan ke atas (tidak di tengah banget) */
             align-items: flex-start;
-            padding-top: 60px; 
-            
-            /* Mencegah Pull-to-refresh di HP */
-            overscroll-behavior-y: none; 
+            padding-top: 50px;
+            overscroll-behavior-y: none;
+            font-family: 'Segoe UI', sans-serif;
+            overflow-x: hidden;
         }
 
-        /* Overlay Awal untuk Mengizinkan Audio Play */
-        #start-overlay {
+        #desktop-blocker {
+            display: none;
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            display: flex;
-            justify-content: center;
+            background-color: #050505;
+            color: #ffffff;
+            z-index: 999999;
             align-items: center;
-            z-index: 9999;
-            cursor: pointer;
-            transition: opacity 1s ease;
-            font-family: 'Caveat', cursive;
-            font-size: 30px;
+            justify-content: center;
+            text-align: center;
+            font-weight: 600;
+            font-size: 18px;
+            letter-spacing: 1px;
         }
 
-        /* Container Profile Tanpa Background Putih */
-        .profile-container {
+        @media (min-width: 601px) {
+            #main-wrapper, #loading-screen, #main-player { display: none !important; }
+            #desktop-blocker { display: flex !important; }
+        }
+
+        #loading-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(45, 45, 45, 0.7);
+            backdrop-filter: blur(10px);
+            z-index: 100000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.6s ease;
+        }
+
+        .spinner {
+            width: 45px;
+            height: 45px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 17px;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            display: flex;
+        }
+
+        .dots {
+            width: 20px;
+            text-align: left;
+        }
+
+        .loading-percent {
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #enter-btn {
+            display: none;
+            padding: 12px 35px;
+            background: #ffffff;
+            color: #1a1a1a;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            transform: scale(0.9);
+            animation: popIn 0.3s forwards ease-out;
+        }
+
+        @keyframes popIn {
+            100% { transform: scale(1); }
+        }
+
+        #main-wrapper {
             width: 100%;
             max-width: 380px;
             padding: 0 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            padding-bottom: 120px;
         }
 
-        /* Style Profile Picture (Dikecilkan & Pinggiran Hitam) */
+        .animate-item {
+            opacity: 0;
+            transform: translateY(-25px);
+            transition: opacity 0.7s cubic-bezier(0.25, 1, 0.5, 1), transform 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .animate-item.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         .profile-pic {
-            width: 105px; /* Foto dikecilkan */
+            width: 105px;
             height: 105px;
             border-radius: 50%;
             object-fit: cover;
             border: 4px solid #000000;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
-            margin-bottom: 15px; /* Jarak ke icon IG */
-            
-            /* Mencegah Gambar ditarik / diseret */
+            margin-bottom: 15px;
             -webkit-user-drag: none;
         }
 
-        /* Ikon Instagram & Link */
-        .ig-link {
-            margin-bottom: 20px;
-            transition: transform 0.3s ease;
+        .ig-container {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            text-decoration: none;
-        }
-
-        .ig-link:hover {
-            transform: scale(1.15); /* Efek membesar saat disentuh */
+            margin-bottom: 25px;
+            cursor: pointer;
         }
 
         .ig-icon {
-            width: 40px; /* Ukuran icon IG */
+            width: 40px;
             height: 40px;
             object-fit: contain;
-            /* Mencegah Gambar ditarik */
+            border-radius: 12px;
             -webkit-user-drag: none;
             filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.8));
+            margin-bottom: 5px;
         }
 
-        /* Style Judul / Nama (Gaya Coretan Permanent Marker & Besar) */
+        .ig-username {
+            font-size: 13px;
+            font-weight: 700;
+            color: #2c2c2c;
+            -webkit-text-stroke: 0.4px #ffffff;
+        }
+
         .profile-name {
             font-family: 'Permanent Marker', cursive;
-            font-size: 40px; /* Teks dibesarkan */
-            color: #ffffff;
+            font-size: 40px;
+            color: #2c2c2c;
             letter-spacing: 3px;
-            text-shadow: 4px 4px 6px rgba(0, 0, 0, 0.9), -1px -1px 4px rgba(0,0,0,0.7);
+            -webkit-text-stroke: 1px #ffffff;
+            text-shadow: 4px 4px 6px rgba(0, 0, 0, 0.9);
             margin-bottom: 25px;
             text-align: center;
         }
 
-        /* Style List Data Diri (Gaya Tulisan Tangan Keren) */
         .info-list {
             width: 100%;
             display: flex;
@@ -127,132 +205,252 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px 5px;
-            border-bottom: 2px dashed rgba(255, 255, 255, 0.5); /* Garis putus-putus seperti coretan */
+            border-bottom: 2px dashed rgba(255, 255, 255, 0.4);
             font-family: 'Caveat', cursive;
-            font-size: 26px; /* Teks dibesarkan */
-            color: #ffffff;
-            text-shadow: 2px 2px 5px rgba(0, 0, 0, 1), -1px -1px 3px rgba(0,0,0,0.8);
+            font-size: 26px;
+            color: #2c2c2c;
+            -webkit-text-stroke: 0.7px #ffffff;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 1);
         }
 
         .info-item:last-child {
             border-bottom: none;
         }
 
-        .info-label {
+        .info-label, .info-value {
             font-weight: 700;
         }
 
-        .info-value {
+        .music-player-box {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            width: 88%;
+            max-width: 360px;
+            border-radius: 20px;
+            padding: 2.5px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+            z-index: 999;
+            display: flex;
+            margin-left: -44%;
+        }
+
+        @media (max-width: 409px) {
+            .music-player-box {
+                margin-left: -44vw;
+            }
+        }
+        @media (min-width: 409px) and (max-width: 600px) {
+            .music-player-box {
+                margin-left: -180px;
+            }
+        }
+
+        .music-player-box::before {
+            content: '';
+            position: absolute;
+            top: -50%; 
+            left: -50%; 
+            width: 200%; 
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent 70%, #ffffff 100%);
+            animation: spinLight 3s linear infinite;
+            z-index: 1;
+        }
+
+        .music-player-box::after {
+            content: '';
+            position: absolute;
+            inset: 2.5px;
+            background: rgba(20, 20, 20, 0.85);
+            border-radius: 17.5px;
+            z-index: 2;
+            backdrop-filter: blur(12px);
+        }
+
+        @keyframes spinLight {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .player-inner {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 12px 15px;
+            background: transparent;
+        }
+
+        .music-cover {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;
+            margin-right: 15px;
+            -webkit-user-drag: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .music-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .music-title {
+            color: #2c2c2c;
+            -webkit-text-stroke: 0.5px #ffffff;
+            font-weight: 800;
+            font-size: 17px;
+            margin-bottom: 2px;
+        }
+
+        .music-sub-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .music-artist, .music-time {
+            color: #2c2c2c;
+            -webkit-text-stroke: 0.3px #ffffff;
             font-weight: 700;
+            font-size: 13px;
         }
     </style>
 </head>
 <body>
 
-    <!-- Layar klik pertama agar musik bisa diputar oleh Browser -->
-    <div id="start-overlay">
-        <h2>Tap to Enter</h2>
+    <div id="desktop-blocker">
+        Mobile Access Only. Please view on a mobile device.
     </div>
 
-    <!-- Audio Player (Disembunyikan) -->
+    <div id="loading-screen">
+        <div class="spinner" id="spinner"></div>
+        <div class="loading-text" id="status-text">Loading Page, Please Wait<span class="dots" id="dots"></span></div>
+        <div class="loading-percent" id="percent">0%</div>
+        <button id="enter-btn">Press to view</button>
+    </div>
+
     <audio id="bg-music" src="Tension.mp3"></audio>
 
-    <!-- UI Profile -->
-    <div class="profile-container">
-        <!-- Foto Profil dengan proteksi download -->
-        <img src="profile.png" alt="Profile Picture" class="profile-pic" oncontextmenu="return false;" draggable="false">
+    <div id="main-wrapper">
+        <img src="profile.png" alt="" class="profile-pic animate-item" oncontextmenu="return false;" draggable="false">
         
-        <!-- Ikon IG, link ini akan mendeteksi aplikasi IG otomatis di Android/iOS -->
-        <a href="https://www.instagram.com/real.zatt?igsh=MTc3aHZmbnB0ZDc0YQ==" target="_blank" class="ig-link">
-            <img src="ig.png" alt="Instagram" class="ig-icon" oncontextmenu="return false;" draggable="false">
-        </a>
+        <div class="ig-container animate-item" onclick="window.location.href='https://www.instagram.com/real.zatt?igsh=MTc3aHZmbnB0ZDc0YQ=='">
+            <img src="ig.png" alt="" class="ig-icon" oncontextmenu="return false;" draggable="false">
+            <div class="ig-username">@real.zatt</div>
+        </div>
 
-        <h1 class="profile-name">Zat</h1>
+        <h1 class="profile-name animate-item">Zat</h1>
 
         <div class="info-list">
-            <div class="info-item">
-                <span class="info-label">Nama</span>
+            <div class="info-item animate-item">
+                <span class="info-label">Name</span>
                 <span class="info-value">Zat</span>
             </div>
-            <div class="info-item">
-                <span class="info-label">Agama</span>
+            <div class="info-item animate-item">
+                <span class="info-label">Religion</span>
                 <span class="info-value">Privacy</span>
             </div>
-            <div class="info-item">
+            <div class="info-item animate-item">
                 <span class="info-label">Age</span>
                 <span class="info-value"><span id="dynamic-age">14</span></span>
             </div>
-            <div class="info-item">
+            <div class="info-item animate-item">
                 <span class="info-label">Birthday</span>
-                <span class="info-value">15 Mei 2012</span>
+                <span class="info-value">15 May 2012</span>
             </div>
-            <div class="info-item">
+            <div class="info-item animate-item">
                 <span class="info-label">Origin</span>
                 <span class="info-value">Privacy</span>
             </div>
         </div>
     </div>
 
-    <!-- SCRIPT JAVASCRIPT -->
+    <div class="music-player-box animate-item" id="main-player">
+        <div class="player-inner">
+            <img src="Tension.png" alt="" class="music-cover" oncontextmenu="return false;" draggable="false">
+            <div class="music-info">
+                <div class="music-title">Tension</div>
+                <div class="music-sub-container">
+                    <div class="music-artist">by: Jaxon Mune</div>
+                    <div class="music-time" id="music-time">0:00 / 0:00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // --- 1. PROTEKSI HALAMAN (ANTI-REFRESH & ANTI-INSPECT) ---
-        // Mencegah Klik Kanan
         document.addEventListener('contextmenu', event => event.preventDefault());
 
-        // Mencegah Tombol Keyboard (F5, Ctrl+R, F12)
         document.addEventListener('keydown', function(e) {
-            // Blokir F5
-            if (e.key === 'F5' || e.keyCode === 116) {
-                e.preventDefault();
-            }
-            // Blokir Ctrl+R atau Cmd+R
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.keyCode === 82)) {
-                e.preventDefault();
-            }
-            // Blokir F12 (Inspect Element)
-            if (e.key === 'F12' || e.keyCode === 123) {
-                e.preventDefault();
-            }
-            // Blokir Ctrl+Shift+I / J / U
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I' || e.key === 'j' || e.key === 'J')) {
-                e.preventDefault();
-            }
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
-                e.preventDefault();
-            }
+            if (e.key === 'F5' || e.keyCode === 116) e.preventDefault();
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.keyCode === 82)) e.preventDefault();
+            if (e.key === 'F12' || e.keyCode === 123) e.preventDefault();
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I' || e.key === 'j' || e.key === 'J')) e.preventDefault();
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) e.preventDefault();
         });
 
-        // --- 2. SISTEM UMUR OTOMATIS ---
         function calculateAge() {
             const birthDate = new Date('2012-05-15');
             const today = new Date();
-            
             let age = today.getFullYear() - birthDate.getFullYear();
             const monthDiff = today.getMonth() - birthDate.getMonth();
-            
             if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
                 age--;
             }
-            
             document.getElementById('dynamic-age').textContent = age;
         }
         calculateAge();
 
-        // --- 3. SISTEM AUDIO HALUS (FADE IN / FADE OUT LOOP) ---
+        let loadPercent = 0;
+        let dotCount = 0;
+        const percentEl = document.getElementById('percent');
+        const dotsEl = document.getElementById('dots');
+        const statusTextEl = document.getElementById('status-text');
+        const spinnerEl = document.getElementById('spinner');
+        const enterBtn = document.getElementById('enter-btn');
+        const loadingScreen = document.getElementById('loading-screen');
+        const animateItems = document.querySelectorAll('.animate-item');
+
+        const loadInterval = setInterval(() => {
+            loadPercent++;
+            percentEl.textContent = loadPercent + '%';
+            if (loadPercent >= 100) {
+                clearInterval(loadInterval);
+                clearInterval(dotInterval);
+                spinnerEl.style.display = 'none';
+                percentEl.style.display = 'none';
+                statusTextEl.innerHTML = 'Finished Loading';
+                enterBtn.style.display = 'block';
+            }
+        }, 50);
+
+        const dotInterval = setInterval(() => {
+            dotCount = (dotCount + 1) % 4;
+            dotsEl.textContent = '.'.repeat(dotCount);
+        }, 400);
+
         const bgMusic = document.getElementById('bg-music');
-        const overlay = document.getElementById('start-overlay');
-        const fadeDuration = 3; 
+        const timeDisplay = document.getElementById('music-time');
+        const fadeDuration = 3;
 
-        overlay.addEventListener('click', function() {
-            overlay.style.opacity = '0';
-            setTimeout(() => { overlay.style.display = 'none'; }, 1000);
-
-            bgMusic.volume = 0; 
-            bgMusic.play();
-            fadeIn(bgMusic);
-        });
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            let m = Math.floor(seconds / 60);
+            let s = Math.floor(seconds % 60);
+            if (s < 10) s = '0' + s;
+            return m + ':' + s;
+        }
 
         bgMusic.addEventListener('timeupdate', function() {
+            timeDisplay.textContent = formatTime(bgMusic.currentTime) + ' / ' + formatTime(bgMusic.duration);
             const timeLeft = bgMusic.duration - bgMusic.currentTime;
             if (timeLeft <= fadeDuration && bgMusic.volume > 0) {
                 let newVolume = timeLeft / fadeDuration;
@@ -278,6 +476,26 @@
                 }
             }, 100); 
         }
+
+        enterBtn.addEventListener('click', function() {
+            bgMusic.volume = 0;
+            bgMusic.play().then(() => {
+                fadeIn(bgMusic);
+            }).catch(() => {});
+
+            loadingScreen.style.opacity = '0';
+            
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                
+                animateItems.forEach((item, index) => {
+                    setTimeout(() => {
+                        item.classList.add('show');
+                    }, index * 120);
+                });
+                
+            }, 600);
+        });
     </script>
 </body>
 </html>
