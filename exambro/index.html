@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Exambro Mobile Layout - Fullscreen Pro</title>
+    <style>
+        /* =========================================
+           RESET & PENGATURAN DASAR
+           ========================================= */
+        html, body {
+            overscroll-behavior-y: none; /* Mencegah tarik ke bawah untuk refresh (pull-to-refresh) */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent; 
+            font-family: Arial, Helvetica, sans-serif !important; 
+        }
+
+        .no-select {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            height: 100vh; 
+            display: flex;
+            flex-direction: column;
+            background-color: #f2f2f2;
+            overflow: hidden;
+        }
+
+        /* =========================================
+           1. BAGIAN ATAS (HEADER EXAMBRO)
+           ========================================= */
+        .exambro-header {
+            background-color: #0ab57d; 
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px; 
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); 
+            z-index: 10;
+        }
+
+        .exambro-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer; 
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px; 
+        }
+
+        .clock-display {
+            font-size: 14px; 
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .exambro-menu {
+            font-size: 24px;
+            font-weight: bold;
+            line-height: 1;
+            padding: 0 5px;
+            cursor: default; 
+        }
+
+        /* =========================================
+           2. BAGIAN TENGAH (TEMPAT WEBSITE/SOAL)
+           ========================================= */
+        .exambro-content {
+            flex-grow: 1; 
+            background-color: #ffffff;
+            width: 100%;
+            position: relative;
+        }
+
+        .exambro-content iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* =========================================
+           3. BAGIAN BAWAH (NAVIGASI)
+           ========================================= */
+        .exambro-footer {
+            display: flex;
+            height: 50px;
+            width: 100%;
+            z-index: 10;
+            transition: transform 0.2s ease-in-out; 
+        }
+
+        .exambro-footer button {
+            flex: 1; 
+            border: none;
+            color: white;
+            font-size: 11px; 
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: filter 0.2s; 
+        }
+
+        .exambro-footer button:active { filter: brightness(0.8); }
+
+        .btn-light-green { background-color: #38c783; } 
+        .btn-bright-green { background-color: #07c517; } 
+        .btn-dark-green { background-color: #00980f; }   
+
+        /* =========================================
+           4. DESAIN POP-UP KELUAR & TOAST NOTIFICATION
+           ========================================= */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: white;
+            width: 85%;
+            max-width: 320px;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-box { transform: scale(1); }
+
+        .modal-title {
+            color: #0ab57d;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .modal-desc {
+            color: #444;
+            font-size: 14px;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .btn-cancel { background-color: #e0e0e0; color: #333; }
+        .btn-confirm { background-color: #dc3545; color: white; }
+
+        /* Desain Toast Notifikasi (Untuk Info Tombol Forward) */
+        .toast-notification {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .toast-notification.show { opacity: 1; }
+
+    </style>
+</head>
+<body class="no-select">
+
+    <!-- 1. Header Hijau Atas -->
+    <header class="exambro-header">
+        <div class="exambro-title" id="fullscreen-btn">Exambro</div>
+        <div class="header-right">
+            <div id="real-time-clock" class="clock-display">0.00</div>
+            <div class="exambro-menu">&#8942;</div>
+        </div>
+    </header>
+
+    <!-- 2. Area Tengah (Memuat Website Baru: Lynk.id) -->
+    <main class="exambro-content">
+        <iframe id="exam-frame" src="https://forms.gle/zjH8egydEJnBeKzB6" allowfullscreen></iframe>
+    </main>
+
+    <!-- 3. Navigasi Bawah -->
+    <footer class="exambro-footer" id="bottom-footer">
+        <button id="btn-back" class="btn-light-green">Back</button>
+        <button id="btn-exit" class="btn-bright-green">Exit</button>
+        <button id="btn-refresh" class="btn-dark-green">Refresh</button>
+        <!-- Tombol Forward tetap terlihat sama, namun fungsinya kini menjadi "Lock Fullscreen" -->
+        <button id="btn-forward" class="btn-light-green">Forward</button>
+    </footer>
+
+    <!-- Notifikasi Toast Kecil -->
+    <div id="toast-msg" class="toast-notification">Layar Terkunci</div>
+
+    <!-- 4. Pop-up Peringatan Keluar -->
+    <div id="exit-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">Konfirmasi Keluar</div>
+            <div class="modal-desc">Apakah Anda yakin ingin keluar dari halaman ujian ini?</div>
+            <div class="modal-buttons">
+                <button id="btn-cancel-exit" class="modal-btn btn-cancel">Batal</button>
+                <button id="btn-confirm-exit" class="modal-btn btn-confirm">Keluar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================
+         JAVASCRIPT (FUNGSI UTAMA & LOCK FORWARD)
+         ========================================= -->
+    <script>
+        // --- Status Kunci Layar (Default: Terbuka) ---
+        let isScreenLocked = false;
+        let toastTimeout;
+
+        // Fungsi Memunculkan Notifikasi Kecil
+        function showToast(message) {
+            const toast = document.getElementById('toast-msg');
+            toast.innerText = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000); // Notifikasi hilang otomatis dalam 2 detik
+        }
+
+        // --- 1. Fungsi Layar Penuh pada Teks "Exambro" ---
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        fullscreenBtn.addEventListener('click', () => {
+            // JIKA TERKUNCI OLEH TOMBOL FORWARD, CEGAH KLIK!
+            if (isScreenLocked) {
+                showToast("Layar Terkunci! Buka via tombol FORWARD");
+                return;
+            }
+
+            // Jika tidak terkunci, jalankan fungsi layar penuh
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Gagal masuk mode fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // --- 2. FUNGSI BARU TOMBOL FORWARD (KUNCI/BUKA FULLSCREEN) ---
+        document.getElementById('btn-forward').addEventListener('click', () => {
+            isScreenLocked = !isScreenLocked; // Mengubah status (Terkunci <-> Terbuka)
+            
+            if (isScreenLocked) {
+                showToast("Kunci Aktif: Exambro tidak bisa disentuh");
+            } else {
+                showToast("Kunci Terbuka");
+            }
+        });
+
+        // --- 3. Jam Real-Time (Format 12-Jam) ---
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            hours = hours % 12;
+            hours = hours ? hours : 12; 
+            
+            document.getElementById('real-time-clock').innerText = `${hours}.${minutes}`;
+        }
+        setInterval(updateClock, 1000); 
+        updateClock(); 
+
+        // --- 4. Mencegah Tombol Bawah Ikut Naik Saat Keyboard Terbuka ---
+        const footer = document.getElementById('bottom-footer');
+        const initialHeight = window.innerHeight; 
+
+        window.addEventListener('resize', () => {
+            if (window.innerHeight < initialHeight - 150) {
+                footer.style.display = 'none'; 
+            } else {
+                footer.style.display = 'flex'; 
+            }
+        });
+
+        // --- 5. Fungsi Tombol Back & Refresh ---
+        const iframe = document.getElementById('exam-frame');
+        document.getElementById('btn-back').addEventListener('click', () => window.history.back());
+        document.getElementById('btn-refresh').addEventListener('click', () => iframe.src = iframe.src);
+
+        // --- 6. Fungsi Pop-up Modal (Exit) ---
+        const exitModal = document.getElementById('exit-modal');
+        document.getElementById('btn-exit').addEventListener('click', () => { exitModal.classList.add('active'); });
+        document.getElementById('btn-cancel-exit').addEventListener('click', () => { exitModal.classList.remove('active'); });
+        
+        document.getElementById('btn-confirm-exit').addEventListener('click', () => {
+            exitModal.classList.remove('active');
+            window.close(); 
+            window.location.href = "about:blank"; 
+        });
+    </script>
+
+</body>
+</html>
