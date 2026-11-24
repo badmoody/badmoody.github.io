@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galeri Link Gambar + AI Tanya-Jawab</title>
+<style>
+:root{--bg:#f5f6fa;--card:#fff;--tx:#1b1f2a;--mu:#667085;--bd:#e3e6ee;--ac:#3b5bfd;--ok:#12a150;--er:#d92d20}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1220;--card:#181c2e;--tx:#eceff8;--mu:#98a2b8;--bd:#2a3050;--ac:#7b93ff;--ok:#32d583;--er:#f97066}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--bd);background:var(--card);position:sticky;top:0;z-index:5}
+h1{font-size:18px;margin:0}
+main{max-width:1000px;margin:0 auto;padding:20px}
+.bar{display:flex;gap:8px;flex-wrap:wrap}
+input,select,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;width:100%}
+button{font:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;padding:10px 14px}
+button.p{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
+button:disabled{opacity:.5;cursor:wait}
+.bar input{flex:1;min-width:220px}
+.hint{color:var(--mu);font-size:13px;margin:8px 0 20px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.card img{width:100%;height:220px;object-fit:cover;background:var(--bd);display:block}
+.body{padding:12px;display:flex;flex-direction:column;gap:8px}
+.url{font-size:12px;color:var(--mu);word-break:break-all}
+.qa{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.qa div{padding:8px 10px;border-radius:8px;background:var(--bg)}
+.qa b{display:block;font-size:12px;color:var(--mu);font-weight:600}
+.row{display:flex;gap:6px}
+.row input{flex:1;padding:8px 10px}
+.row button{padding:8px 12px}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);width:fit-content;color:var(--mu)}
+.tag.ok{color:var(--ok)}.tag.er{color:var(--er)}
+dialog{border:1px solid var(--bd);border-radius:16px;background:var(--card);color:var(--tx);max-width:560px;width:calc(100% - 24px);padding:20px}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+label{display:block;font-size:13px;color:var(--mu);margin:12px 0 4px}
+.empty{text-align:center;color:var(--mu);padding:60px 10px;border:2px dashed var(--bd);border-radius:14px}
+details{margin-top:14px;font-size:13px;color:var(--mu)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🖼️ Galeri Gambar + AI Tanya-Jawab</h1>
+  <div class="bar"><button id="clear">Hapus semua</button><button id="cfgBtn">⚙️ Pengaturan</button></div>
+</header>
+
+<main>
+  <div class="bar">
+    <input id="url" type="url" placeholder="Tempel link gambar (https://...jpg / png / webp)" autofocus>
+    <button class="p" id="add">Tampilkan</button>
+  </div>
+  <p class="hint">Tempel (Ctrl+V) link di mana saja pada halaman, seret link ke sini, atau pakai <code>?img=LINK</code> di URL: gambar akan langsung tampil dan AI otomatis menjawab pertanyaan standar.</p>
+  <div id="list" class="grid"></div>
+</main>
+
+<dialog id="dlg">
+  <h3 style="margin-top:0">Pengaturan</h3>
+
+  <label>Mode AI</label>
+  <select id="mode">
+    <option value="hf">Hugging Face Inference API (VQA)</option>
+    <option value="proxy">Backend sendiri / proxy (Cloudflare Worker, dll.)</option>
+  </select>
+  <label>Endpoint AI</label>
+  <input id="endpoint" placeholder="https://api-inference.huggingface.co/models/dandelin/vilt-b32-finetuned-vqa">
+  <label>Token API (opsional untuk proxy)</label>
+  <input id="token" type="password" placeholder="hf_xxx">
+  <label>Pertanyaan otomatis (satu per baris)</label>
+  <textarea id="qs" rows="3"></textarea>
+  <label><input type="checkbox" id="auto" style="width:auto"> Jalankan AI otomatis setelah gambar tampil</label>
+
+  <hr style="border:0;border-top:1px solid var(--bd);margin:18px 0">
+  <b>Google Form (penyimpanan hasil)</b>
+  <label>URL Form (…/viewform)</label>
+  <input id="formUrl" placeholder="https://docs.google.com/forms/d/e/XXXX/viewform">
+  <label>Entry ID: Link gambar</label>
+  <input id="eUrl" placeholder="entry.1111111111">
+  <label>Entry ID: Hasil tanya-jawab</label>
+  <input id="eQa" placeholder="entry.2222222222">
+
+  <details><summary>Cara cepat menyiapkan</summary>
+    <ol>
+      <li>Buat Google Form dengan 2 pertanyaan <i>Jawaban singkat/Paragraf</i>: “Link gambar” dan “Hasil QA”.</li>
+      <li>Menu ⋮ → <b>Dapatkan link isi otomatis</b>, isi dummy, klik <b>Dapatkan link</b>, salin. Angka <code>entry.xxxx</code> di link itu adalah Entry ID.</li>
+      <li>Tempel URL form dan kedua Entry ID di atas. Setiap gambar baru + hasil AI akan terkirim otomatis.</li>
+      <li>Mode proxy: backend menerima <code>{imageUrl, question}</code> dan mengembalikan <code>{answer}</code>.</li>
+    </ol>
+    Catatan: token disimpan di browser ini saja. Untuk produksi, lebih aman memakai backend/proxy sendiri agar token tidak terekspos.
+  </details>
+
+  <div class="bar" style="margin-top:18px;justify-content:flex-end">
+    <button id="cancel">Tutup</button><button class="p" id="save">Simpan</button>
+  </div>
+</dialog>
+
+<script>
+const DEFAULTS={
+  mode:"hf",
+  endpoint:"https://api-inference.huggingface.co/models/dandelin/vilt-b32-finetuned-vqa",
+  token:"",
+  qs:"What is in this image?\nWhat is the main color?\nHow many people are there?",
+  auto:true,formUrl:"",eUrl:"",eQa:""
+};
+const $=id=>document.getElementById(id);
+const store={
+  get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+};
+let cfg={...DEFAULTS,...store.get("cfg",{})};
+let items=store.get("items",[]);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const valid=u=>{try{return /^https?:$/.test(new URL(u).protocol)}catch{return false}};
+
+/* ---------- AI (VQA) ---------- */
+async function toBase64(url){
+  const r=await fetch(url);if(!r.ok)throw new Error("Gambar tidak bisa diambil (CORS/URL)");
+  const b=await r.blob();
+  return new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(f.result.split(",")[1]);f.onerror=no;f.readAsDataURL(b)});
+}
+async function ask(imageUrl,question){
+  const h={"Content-Type":"application/json"};
+  if(cfg.token)h.Authorization="Bearer "+cfg.token;
+  let body;
+  if(cfg.mode==="proxy")body={imageUrl,question};
+  else body={inputs:{image:await toBase64(imageUrl),question}};
+  const r=await fetch(cfg.endpoint,{method:"POST",headers:h,body:JSON.stringify(body)});
+  if(!r.ok)throw new Error("AI error "+r.status);
+  const d=await r.json();
+  if(d.answer)return d.answer;
+  if(Array.isArray(d)&&d[0])return d[0].answer??d[0].generated_text??JSON.stringify(d[0]);
+  throw new Error("Format respons tidak dikenali");
+}
+
+/* ---------- Google Form ---------- */
+function sendForm(url,qa){
+  if(!cfg.formUrl||!cfg.eUrl||!cfg.eQa)return;
+  const fd=new URLSearchParams();
+  fd.set(cfg.eUrl,url);
+  fd.set(cfg.eQa,qa);
+  fetch(cfg.formUrl.replace(/\/viewform.*$/,"/formResponse"),
+    {method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:fd}).catch(()=>{});
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const el=$("list");
+  if(!items.length){el.innerHTML='<div class="empty" style="grid-column:1/-1">Belum ada gambar. Tempel link gambar di atas.</div>';return}
+  el.innerHTML=items.map(it=>`
+  <div class="card" data-id="${it.id}">
+    <img src="${esc(it.url)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.alt='Gambar gagal dimuat'">
+    <div class="body">
+      <div class="url">${esc(it.url)}</div>
+      <span class="tag ${it.status==='selesai'?'ok':it.status==='gagal'?'er':''}">${esc(it.status||'menunggu')}</span>
+      <div class="qa">${(it.qa||[]).map(x=>`<div><b>${esc(x.q)}</b>${esc(x.a)}</div>`).join("")}</div>
+      <div class="row"><input placeholder="Tanya sesuatu tentang gambar ini…" data-q><button data-ask>Tanya</button><button data-del title="Hapus">✕</button></div>
+    </div>
+  </div>`).join("");
+}
+const save=()=>store.set("items",items);
+
+async function runQA(it,questions){
+  it.status="AI membaca…";render();
+  try{
+    for(const q of questions){
+      const a=await ask(it.url,q);
+      (it.qa=it.qa||[]).push({q,a});render();
+    }
+    it.status="selesai";
+  }catch(e){it.status="gagal: "+e.message}
+  save();render();
+  if(it.qa?.length)sendForm(it.url,it.qa.map(x=>x.q+" → "+x.a).join(" | "));
+}
+
+function addImage(url){
+  url=(url||"").trim();
+  if(!valid(url)){alert("Link tidak valid (harus diawali http/https).");return}
+  const it={id:Date.now()+Math.random().toString(16).slice(2),url,qa:[],status:"menunggu"};
+  items.unshift(it);save();render();
+  if(!cfg.formUrl||!cfg.auto)sendForm(url,"(belum ada hasil AI)");
+  if(cfg.auto)runQA(it,cfg.qs.split("\n").map(s=>s.trim()).filter(Boolean));
+}
+
+/* ---------- Events ---------- */
+$("add").onclick=()=>{addImage($("url").value);$("url").value=""};
+$("url").addEventListener("keydown",e=>{if(e.key==="Enter")$("add").click()});
+document.addEventListener("paste",e=>{
+  if(e.target.matches("input,textarea"))return;
+  const t=e.clipboardData.getData("text");if(valid(t.trim()))addImage(t);
+});
+document.addEventListener("dragover",e=>e.preventDefault());
+document.addEventListener("drop",e=>{
+  e.preventDefault();
+  const t=e.dataTransfer.getData("text/uri-list")||e.dataTransfer.getData("text");
+  if(t)addImage(t.split("\n")[0]);
+});
+$("list").addEventListener("click",e=>{
+  const card=e.target.closest(".card");if(!card)return;
+  const it=items.find(x=>x.id===card.dataset.id);
+  if(e.target.matches("[data-del]")){items=items.filter(x=>x!==it);save();render()}
+  if(e.target.matches("[data-ask]")){
+    const q=card.querySelector("[data-q]").value.trim();
+    if(q)runQA(it,[q]);
+  }
+});
+$("clear").onclick=()=>{if(confirm("Hapus semua gambar?")){items=[];save();render()}};
+
+/* ---------- Settings ---------- */
+const fields=["mode","endpoint","token","qs","formUrl","eUrl","eQa"];
+$("cfgBtn").onclick=()=>{fields.forEach(f=>$(f).value=cfg[f]);$("auto").checked=cfg.auto;$("dlg").showModal()};
+$("cancel").onclick=()=>$("dlg").close();
+$("save").onclick=()=>{
+  fields.forEach(f=>cfg[f]=$(f).value.trim());cfg.auto=$("auto").checked;
+  store.set("cfg",cfg);$("dlg").close();
+};
+
+/* ---------- Init: ?img=LINK ---------- */
+render();
+const p=new URLSearchParams(location.search).get("img");
+if(p)addImage(p);
+</script>
+</body>
+</html>
