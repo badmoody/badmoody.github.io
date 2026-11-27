@@ -2,222 +2,332 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Galeri Link Gambar + AI Tanya-Jawab</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Viewer</title>
 <style>
-:root{--bg:#f5f6fa;--card:#fff;--tx:#1b1f2a;--mu:#667085;--bd:#e3e6ee;--ac:#3b5bfd;--ok:#12a150;--er:#d92d20}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1220;--card:#181c2e;--tx:#eceff8;--mu:#98a2b8;--bd:#2a3050;--ac:#7b93ff;--ok:#32d583;--er:#f97066}}
-*{box-sizing:border-box}
-body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx)}
-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--bd);background:var(--card);position:sticky;top:0;z-index:5}
-h1{font-size:18px;margin:0}
-main{max-width:1000px;margin:0 auto;padding:20px}
-.bar{display:flex;gap:8px;flex-wrap:wrap}
-input,select,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;width:100%}
-button{font:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;padding:10px 14px}
-button.p{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
-button:disabled{opacity:.5;cursor:wait}
-.bar input{flex:1;min-width:220px}
-.hint{color:var(--mu);font-size:13px;margin:8px 0 20px}
-.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
-.card img{width:100%;height:220px;object-fit:cover;background:var(--bd);display:block}
-.body{padding:12px;display:flex;flex-direction:column;gap:8px}
-.url{font-size:12px;color:var(--mu);word-break:break-all}
-.qa{display:flex;flex-direction:column;gap:6px;font-size:14px}
-.qa div{padding:8px 10px;border-radius:8px;background:var(--bg)}
-.qa b{display:block;font-size:12px;color:var(--mu);font-weight:600}
-.row{display:flex;gap:6px}
-.row input{flex:1;padding:8px 10px}
-.row button{padding:8px 12px}
-.tag{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);width:fit-content;color:var(--mu)}
-.tag.ok{color:var(--ok)}.tag.er{color:var(--er)}
-dialog{border:1px solid var(--bd);border-radius:16px;background:var(--card);color:var(--tx);max-width:560px;width:calc(100% - 24px);padding:20px}
-dialog::backdrop{background:rgba(0,0,0,.5)}
-label{display:block;font-size:13px;color:var(--mu);margin:12px 0 4px}
-.empty{text-align:center;color:var(--mu);padding:60px 10px;border:2px dashed var(--bd);border-radius:14px}
-details{margin-top:14px;font-size:13px;color:var(--mu)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#fff;user-select:none}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,#16181d 0%,#000 75%)}
+#photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .35s ease;pointer-events:none}
+body.has-image #photo{opacity:1}
+#empty{display:flex;align-items:center;justify-content:center;transition:opacity .3s ease,transform .3s ease}
+body.has-image #empty{opacity:0;pointer-events:none;transform:scale(.9)}
+.add{width:84px;height:84px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .25s ease,transform .25s ease,border-color .25s ease;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.add:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35);transform:scale(1.06)}
+.add:active{transform:scale(.96)}
+.add svg{width:34px;height:34px}
+#controls{position:fixed;left:0;right:0;bottom:0;padding:0 16px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;pointer-events:none;transform:translateY(12px);transition:opacity .3s ease,transform .3s ease}
+body.has-image.show-ui #controls{opacity:1;pointer-events:auto;transform:none}
+#bar{display:flex;gap:10px;padding:8px;border-radius:999px;background:rgba(20,22,27,.62);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.btn{width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s ease,transform .2s ease}
+.btn:hover{background:rgba(255,255,255,.14)}
+.btn:active{transform:scale(.92)}
+.btn.primary{background:#fff;color:#000}
+.btn.primary:hover{background:#e8e8ec}
+.btn.on{background:rgba(255,255,255,.2)}
+.btn svg{width:22px;height:22px}
+#history{width:min(920px,100%);max-height:0;opacity:0;overflow:hidden;border-radius:22px;background:rgba(20,22,27,.62);border:1px solid transparent;backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);transition:max-height .4s cubic-bezier(.2,.8,.2,1),opacity .3s ease,border-color .3s ease}
+#history.open{max-height:170px;opacity:1;border-color:rgba(255,255,255,.12);box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#strip{display:flex;gap:12px;padding:14px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent;min-height:142px;align-items:center}
+#strip::-webkit-scrollbar{height:6px}
+#strip::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25);border-radius:3px}
+.thumb{position:relative;flex:0 0 auto;width:96px;height:96px;border-radius:14px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#111;transition:transform .2s ease,border-color .2s ease}
+.thumb:hover{transform:translateY(-3px)}
+.thumb.active{border-color:#fff}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.del{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s ease,background .2s ease}
+.del svg{width:12px;height:12px}
+.thumb:hover .del{opacity:1}
+.del:hover{background:rgba(220,40,40,.9)}
+@media (hover:none){.del{opacity:1}}
+#drop{position:fixed;inset:0;border:2px dashed rgba(255,255,255,.5);background:rgba(255,255,255,.06);opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:10}
+body.dragging #drop{opacity:1}
+input[type=file]{display:none}
 </style>
 </head>
 <body>
-<header>
-  <h1>🖼️ Galeri Gambar + AI Tanya-Jawab</h1>
-  <div class="bar"><button id="clear">Hapus semua</button><button id="cfgBtn">⚙️ Pengaturan</button></div>
-</header>
-
-<main>
-  <div class="bar">
-    <input id="url" type="url" placeholder="Tempel link gambar (https://...jpg / png / webp)" autofocus>
-    <button class="p" id="add">Tampilkan</button>
-  </div>
-  <p class="hint">Tempel (Ctrl+V) link di mana saja pada halaman, seret link ke sini, atau pakai <code>?img=LINK</code> di URL: gambar akan langsung tampil dan AI otomatis menjawab pertanyaan standar.</p>
-  <div id="list" class="grid"></div>
-</main>
-
-<dialog id="dlg">
-  <h3 style="margin-top:0">Pengaturan</h3>
-
-  <label>Mode AI</label>
-  <select id="mode">
-    <option value="hf">Hugging Face Inference API (VQA)</option>
-    <option value="proxy">Backend sendiri / proxy (Cloudflare Worker, dll.)</option>
-  </select>
-  <label>Endpoint AI</label>
-  <input id="endpoint" placeholder="https://api-inference.huggingface.co/models/dandelin/vilt-b32-finetuned-vqa">
-  <label>Token API (opsional untuk proxy)</label>
-  <input id="token" type="password" placeholder="hf_xxx">
-  <label>Pertanyaan otomatis (satu per baris)</label>
-  <textarea id="qs" rows="3"></textarea>
-  <label><input type="checkbox" id="auto" style="width:auto"> Jalankan AI otomatis setelah gambar tampil</label>
-
-  <hr style="border:0;border-top:1px solid var(--bd);margin:18px 0">
-  <b>Google Form (penyimpanan hasil)</b>
-  <label>URL Form (…/viewform)</label>
-  <input id="formUrl" placeholder="https://docs.google.com/forms/d/e/XXXX/viewform">
-  <label>Entry ID: Link gambar</label>
-  <input id="eUrl" placeholder="entry.1111111111">
-  <label>Entry ID: Hasil tanya-jawab</label>
-  <input id="eQa" placeholder="entry.2222222222">
-
-  <details><summary>Cara cepat menyiapkan</summary>
-    <ol>
-      <li>Buat Google Form dengan 2 pertanyaan <i>Jawaban singkat/Paragraf</i>: “Link gambar” dan “Hasil QA”.</li>
-      <li>Menu ⋮ → <b>Dapatkan link isi otomatis</b>, isi dummy, klik <b>Dapatkan link</b>, salin. Angka <code>entry.xxxx</code> di link itu adalah Entry ID.</li>
-      <li>Tempel URL form dan kedua Entry ID di atas. Setiap gambar baru + hasil AI akan terkirim otomatis.</li>
-      <li>Mode proxy: backend menerima <code>{imageUrl, question}</code> dan mengembalikan <code>{answer}</code>.</li>
-    </ol>
-    Catatan: token disimpan di browser ini saja. Untuk produksi, lebih aman memakai backend/proxy sendiri agar token tidak terekspos.
-  </details>
-
-  <div class="bar" style="margin-top:18px;justify-content:flex-end">
-    <button id="cancel">Tutup</button><button class="p" id="save">Simpan</button>
-  </div>
-</dialog>
-
+<div id="stage">
+<img id="photo" alt="">
+<div id="empty">
+<button class="add" id="addMain" aria-label="Tambah foto">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+</div>
+</div>
+<div id="controls">
+<div id="history"><div id="strip"></div></div>
+<div id="bar">
+<button class="btn" id="histBtn" aria-label="Riwayat">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+</button>
+<button class="btn primary" id="addBtn" aria-label="Tambah foto">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+<button class="btn" id="fsBtn" aria-label="Layar penuh">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+</button>
+</div>
+</div>
+<div id="drop"></div>
+<input type="file" id="file" accept="image/*" multiple>
 <script>
-const DEFAULTS={
-  mode:"hf",
-  endpoint:"https://api-inference.huggingface.co/models/dandelin/vilt-b32-finetuned-vqa",
-  token:"",
-  qs:"What is in this image?\nWhat is the main color?\nHow many people are there?",
-  auto:true,formUrl:"",eUrl:"",eQa:""
-};
-const $=id=>document.getElementById(id);
-const store={
-  get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},
-  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
-};
-let cfg={...DEFAULTS,...store.get("cfg",{})};
-let items=store.get("items",[]);
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const valid=u=>{try{return /^https?:$/.test(new URL(u).protocol)}catch{return false}};
+(function(){
+var DB_NAME="photo-viewer";
+var STORE="photos";
+var body=document.body;
+var photo=document.getElementById("photo");
+var strip=document.getElementById("strip");
+var historyEl=document.getElementById("history");
+var histBtn=document.getElementById("histBtn");
+var fileInput=document.getElementById("file");
+var items=[];
+var activeId=null;
+var hideTimer=null;
+var dragDepth=0;
 
-/* ---------- AI (VQA) ---------- */
-async function toBase64(url){
-  const r=await fetch(url);if(!r.ok)throw new Error("Gambar tidak bisa diambil (CORS/URL)");
-  const b=await r.blob();
-  return new Promise((ok,no)=>{const f=new FileReader();f.onload=()=>ok(f.result.split(",")[1]);f.onerror=no;f.readAsDataURL(b)});
-}
-async function ask(imageUrl,question){
-  const h={"Content-Type":"application/json"};
-  if(cfg.token)h.Authorization="Bearer "+cfg.token;
-  let body;
-  if(cfg.mode==="proxy")body={imageUrl,question};
-  else body={inputs:{image:await toBase64(imageUrl),question}};
-  const r=await fetch(cfg.endpoint,{method:"POST",headers:h,body:JSON.stringify(body)});
-  if(!r.ok)throw new Error("AI error "+r.status);
-  const d=await r.json();
-  if(d.answer)return d.answer;
-  if(Array.isArray(d)&&d[0])return d[0].answer??d[0].generated_text??JSON.stringify(d[0]);
-  throw new Error("Format respons tidak dikenali");
-}
-
-/* ---------- Google Form ---------- */
-function sendForm(url,qa){
-  if(!cfg.formUrl||!cfg.eUrl||!cfg.eQa)return;
-  const fd=new URLSearchParams();
-  fd.set(cfg.eUrl,url);
-  fd.set(cfg.eQa,qa);
-  fetch(cfg.formUrl.replace(/\/viewform.*$/,"/formResponse"),
-    {method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:fd}).catch(()=>{});
-}
-
-/* ---------- Render ---------- */
-function render(){
-  const el=$("list");
-  if(!items.length){el.innerHTML='<div class="empty" style="grid-column:1/-1">Belum ada gambar. Tempel link gambar di atas.</div>';return}
-  el.innerHTML=items.map(it=>`
-  <div class="card" data-id="${it.id}">
-    <img src="${esc(it.url)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.alt='Gambar gagal dimuat'">
-    <div class="body">
-      <div class="url">${esc(it.url)}</div>
-      <span class="tag ${it.status==='selesai'?'ok':it.status==='gagal'?'er':''}">${esc(it.status||'menunggu')}</span>
-      <div class="qa">${(it.qa||[]).map(x=>`<div><b>${esc(x.q)}</b>${esc(x.a)}</div>`).join("")}</div>
-      <div class="row"><input placeholder="Tanya sesuatu tentang gambar ini…" data-q><button data-ask>Tanya</button><button data-del title="Hapus">✕</button></div>
-    </div>
-  </div>`).join("");
-}
-const save=()=>store.set("items",items);
-
-async function runQA(it,questions){
-  it.status="AI membaca…";render();
-  try{
-    for(const q of questions){
-      const a=await ask(it.url,q);
-      (it.qa=it.qa||[]).push({q,a});render();
-    }
-    it.status="selesai";
-  }catch(e){it.status="gagal: "+e.message}
-  save();render();
-  if(it.qa?.length)sendForm(it.url,it.qa.map(x=>x.q+" → "+x.a).join(" | "));
-}
-
-function addImage(url){
-  url=(url||"").trim();
-  if(!valid(url)){alert("Link tidak valid (harus diawali http/https).");return}
-  const it={id:Date.now()+Math.random().toString(16).slice(2),url,qa:[],status:"menunggu"};
-  items.unshift(it);save();render();
-  if(!cfg.formUrl||!cfg.auto)sendForm(url,"(belum ada hasil AI)");
-  if(cfg.auto)runQA(it,cfg.qs.split("\n").map(s=>s.trim()).filter(Boolean));
-}
-
-/* ---------- Events ---------- */
-$("add").onclick=()=>{addImage($("url").value);$("url").value=""};
-$("url").addEventListener("keydown",e=>{if(e.key==="Enter")$("add").click()});
-document.addEventListener("paste",e=>{
-  if(e.target.matches("input,textarea"))return;
-  const t=e.clipboardData.getData("text");if(valid(t.trim()))addImage(t);
+function openDb(){
+return new Promise(function(resolve,reject){
+var req=indexedDB.open(DB_NAME,1);
+req.onupgradeneeded=function(){req.result.createObjectStore(STORE,{keyPath:"id",autoIncrement:true})};
+req.onsuccess=function(){resolve(req.result)};
+req.onerror=function(){reject(req.error)};
 });
-document.addEventListener("dragover",e=>e.preventDefault());
-document.addEventListener("drop",e=>{
-  e.preventDefault();
-  const t=e.dataTransfer.getData("text/uri-list")||e.dataTransfer.getData("text");
-  if(t)addImage(t.split("\n")[0]);
-});
-$("list").addEventListener("click",e=>{
-  const card=e.target.closest(".card");if(!card)return;
-  const it=items.find(x=>x.id===card.dataset.id);
-  if(e.target.matches("[data-del]")){items=items.filter(x=>x!==it);save();render()}
-  if(e.target.matches("[data-ask]")){
-    const q=card.querySelector("[data-q]").value.trim();
-    if(q)runQA(it,[q]);
-  }
-});
-$("clear").onclick=()=>{if(confirm("Hapus semua gambar?")){items=[];save();render()}};
+}
 
-/* ---------- Settings ---------- */
-const fields=["mode","endpoint","token","qs","formUrl","eUrl","eQa"];
-$("cfgBtn").onclick=()=>{fields.forEach(f=>$(f).value=cfg[f]);$("auto").checked=cfg.auto;$("dlg").showModal()};
-$("cancel").onclick=()=>$("dlg").close();
-$("save").onclick=()=>{
-  fields.forEach(f=>cfg[f]=$(f).value.trim());cfg.auto=$("auto").checked;
-  store.set("cfg",cfg);$("dlg").close();
-};
+var dbPromise=openDb().catch(function(){return null});
 
-/* ---------- Init: ?img=LINK ---------- */
-render();
-const p=new URLSearchParams(location.search).get("img");
-if(p)addImage(p);
+function run(mode,fn){
+return dbPromise.then(function(db){
+if(!db)return null;
+return new Promise(function(resolve,reject){
+var tx=db.transaction(STORE,mode);
+var result=fn(tx.objectStore(STORE));
+tx.oncomplete=function(){resolve(result&&result.result!==undefined?result.result:null)};
+tx.onerror=function(){reject(tx.error)};
+});
+});
+}
+
+function saveBlob(blob){
+var record={blob:blob,added:Date.now()};
+return dbPromise.then(function(db){
+if(!db)return{id:Date.now()+Math.random(),blob:blob,added:record.added};
+return new Promise(function(resolve,reject){
+var tx=db.transaction(STORE,"readwrite");
+var req=tx.objectStore(STORE).add(record);
+tx.oncomplete=function(){record.id=req.result;resolve(record)};
+tx.onerror=function(){reject(tx.error)};
+});
+});
+}
+
+function removeRecord(id){
+return run("readwrite",function(store){return store.delete(id)}).catch(function(){});
+}
+
+function loadAll(){
+return run("readonly",function(store){return store.getAll()}).then(function(list){return list||[]}).catch(function(){return[]});
+}
+
+function hydrate(record){
+record.url=URL.createObjectURL(record.blob);
+return record;
+}
+
+function icon(){
+return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+}
+
+function renderHistory(){
+strip.innerHTML="";
+items.forEach(function(item){
+var thumb=document.createElement("div");
+thumb.className="thumb"+(item.id===activeId?" active":"");
+var img=document.createElement("img");
+img.src=item.url;
+img.alt="";
+img.draggable=false;
+var del=document.createElement("button");
+del.className="del";
+del.setAttribute("aria-label","Hapus");
+del.innerHTML=icon();
+del.addEventListener("click",function(e){
+e.stopPropagation();
+remove(item);
+});
+thumb.addEventListener("click",function(){
+show(item);
+});
+thumb.appendChild(img);
+thumb.appendChild(del);
+strip.appendChild(thumb);
+});
+}
+
+function enterFullscreen(){
+var el=document.documentElement;
+if(document.fullscreenElement||!el.requestFullscreen)return;
+try{
+var p=el.requestFullscreen();
+if(p&&p.catch)p.catch(function(){});
+}catch(e){}
+}
+
+function toggleFullscreen(){
+if(document.fullscreenElement){
+document.exitFullscreen();
+}else{
+enterFullscreen();
+}
+}
+
+function show(item){
+activeId=item.id;
+photo.src=item.url;
+body.classList.add("has-image");
+renderHistory();
+enterFullscreen();
+}
+
+function remove(item){
+var index=items.indexOf(item);
+if(index<0)return;
+items.splice(index,1);
+removeRecord(item.id);
+URL.revokeObjectURL(item.url);
+if(activeId===item.id){
+if(items.length){
+show(items[Math.min(index,items.length-1)]);
+}else{
+activeId=null;
+photo.removeAttribute("src");
+body.classList.remove("has-image","show-ui");
+historyEl.classList.remove("open");
+histBtn.classList.remove("on");
+if(document.fullscreenElement)document.exitFullscreen();
+renderHistory();
+}
+}else{
+renderHistory();
+}
+}
+
+function openHistory(open){
+historyEl.classList.toggle("open",open);
+histBtn.classList.toggle("on",open);
+}
+
+function pokeUi(){
+if(!body.classList.contains("has-image"))return;
+body.classList.add("show-ui");
+clearTimeout(hideTimer);
+hideTimer=setTimeout(function(){
+if(!document.querySelector("#controls:hover")){
+body.classList.remove("show-ui");
+}
+},3500);
+}
+
+function addFiles(fileList){
+var files=Array.prototype.filter.call(fileList,function(f){return f.type.indexOf("image/")===0});
+if(!files.length)return;
+var last=null;
+var chain=Promise.resolve();
+files.forEach(function(file){
+chain=chain.then(function(){
+return saveBlob(file).then(function(record){
+last=hydrate(record);
+items.unshift(last);
+});
+});
+});
+chain.then(function(){
+if(last){
+show(last);
+openHistory(true);
+pokeUi();
+}
+});
+}
+
+function pick(){
+fileInput.value="";
+fileInput.click();
+}
+
+fileInput.addEventListener("change",function(){
+if(fileInput.files&&fileInput.files.length)addFiles(fileInput.files);
+});
+
+document.getElementById("addMain").addEventListener("click",pick);
+document.getElementById("addBtn").addEventListener("click",function(){
+pick();
+});
+document.getElementById("fsBtn").addEventListener("click",toggleFullscreen);
+histBtn.addEventListener("click",function(){
+openHistory(!historyEl.classList.contains("open"));
+pokeUi();
+});
+
+["mousemove","touchstart","keydown"].forEach(function(evt){
+document.addEventListener(evt,pokeUi,{passive:true});
+});
+
+document.getElementById("stage").addEventListener("click",function(e){
+if(!body.classList.contains("has-image"))return;
+if(e.target.closest("#empty"))return;
+if(body.classList.contains("show-ui")){
+body.classList.remove("show-ui");
+openHistory(false);
+}else{
+pokeUi();
+}
+});
+
+document.addEventListener("keydown",function(e){
+if(e.key==="ArrowRight"||e.key==="ArrowLeft"){
+if(!items.length)return;
+var index=items.findIndex(function(i){return i.id===activeId});
+var next=e.key==="ArrowRight"?index+1:index-1;
+if(next>=0&&next<items.length)show(items[next]);
+}
+if(e.key==="h"||e.key==="H"){
+openHistory(!historyEl.classList.contains("open"));
+}
+});
+
+window.addEventListener("dragenter",function(e){
+e.preventDefault();
+dragDepth++;
+body.classList.add("dragging");
+});
+window.addEventListener("dragover",function(e){e.preventDefault()});
+window.addEventListener("dragleave",function(e){
+e.preventDefault();
+dragDepth=Math.max(0,dragDepth-1);
+if(!dragDepth)body.classList.remove("dragging");
+});
+window.addEventListener("drop",function(e){
+e.preventDefault();
+dragDepth=0;
+body.classList.remove("dragging");
+if(e.dataTransfer&&e.dataTransfer.files)addFiles(e.dataTransfer.files);
+});
+
+loadAll().then(function(list){
+list.sort(function(a,b){return b.id-a.id});
+items=list.map(hydrate);
+renderHistory();
+if(items.length){
+activeId=items[0].id;
+photo.src=items[0].url;
+body.classList.add("has-image");
+renderHistory();
+pokeUi();
+}
+});
+})();
 </script>
 </body>
 </html>
